@@ -183,10 +183,16 @@ and stealth all at once instead of one at a time.
 ## Status
 
 - [x] FastAPI skeleton + `Source` ABC
-- [x] First scrape-based source module (Aqua Manga) — parsing verified against
-      realistic Madara HTML fixtures; not yet verified live (this sandbox's
-      network proxy blocks aquareader.org, so test on a real dev machine
-      before trusting it end-to-end)
+- [x] First scrape-based source module (Aqua Manga) — verified live end-to-end
+      (search returns real results). The site turned out to be behind a
+      Cloudflare "managed" Turnstile challenge (wasn't when this was scoped;
+      configs change per site-owner, see Roadmap phase 6), so it runs through
+      `StealthyFetcher(solve_cloudflare=True, headless=False)` instead of
+      plain `Fetcher`. **`headless=False` is required** — in headless mode
+      the challenge never clears (verified: 5+ min hang, vs ~12s headful) —
+      so the backend needs a real or virtual display wherever it runs.
+      Revisit before deploying to Railway; a plain headless container will
+      hang on every search until this is addressed (e.g. `xvfb`)
 - [x] Redis cache layer
 - [x] Expo search + reader UI — navigation shell, screens, and design system
       wired to the backend; library screen is still an empty state pending

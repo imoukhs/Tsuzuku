@@ -25,10 +25,19 @@ class AquaMangaSource(Source):
     """Madara WordPress theme (aquareader.org). See CLAUDE.md Roadmap phase 1.
 
     Was plain `Fetcher` originally (assumed no Cloudflare); live testing
-    against the real site turned up a Cloudflare Turnstile challenge on
-    every request (403, "Just a moment..." page), so this now goes through
-    `StealthyFetcher` with `solve_cloudflare=True` instead — Cloudflare
-    configs change per site-owner over time, see CLAUDE.md Roadmap phase 6.
+    against the real site turned up a Cloudflare "managed" Turnstile
+    challenge on every request, so this now goes through `StealthyFetcher`
+    with `solve_cloudflare=True` instead — Cloudflare configs change per
+    site-owner over time, see CLAUDE.md Roadmap phase 6.
+
+    `headless=False` is required, not optional: in headless mode the
+    "managed" challenge type never clears (Scrapling's non-interactive
+    solver loop has no timeout/attempt cap, so it hangs indefinitely —
+    verified live, 5+ minutes with no resolution). Headful, the same
+    challenge solves in ~12s. This means the backend needs a real or
+    virtual (e.g. `xvfb`) display wherever it runs — a plain headless
+    container/Railway deploy will hang on every search. Revisit before
+    deploying; not an issue for local dev on a Mac.
     """
 
     id = "aquamanga"
@@ -40,7 +49,9 @@ class AquaMangaSource(Source):
 
     @staticmethod
     async def _fetch(url: str):
-        return await asyncio.to_thread(StealthyFetcher.fetch, url, solve_cloudflare=True)
+        return await asyncio.to_thread(
+            StealthyFetcher.fetch, url, solve_cloudflare=True, headless=False
+        )
 
     async def search(self, query: str) -> list[MangaResult]:
         url = f"{self.base_url}/?s={quote_plus(query)}&post_type=wp-manga"
