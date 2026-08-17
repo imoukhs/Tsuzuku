@@ -10,9 +10,14 @@ import '@/global.css';
 const palette = {
   sumi: '#0B0B0D', // ink black — reading surface + app background
   washi: '#F3EEE2', // paper white — primary text
-  hanko: '#B23A2E', // seal red — the one loud accent (CTAs, unread badges, source tags)
+  hanko: '#B23A2E', // seal red — the one loud accent (CTAs, unread badges, source tags).
+  // Only ever use hanko as a *fill* (badges, buttons) with washi text on top —
+  // as foreground text on sumi it's 3.3:1, well under WCAG AA's 4.5:1 for body text.
   kohaku: '#C68A3D', // amber sepia — reserved for the chapter-complete transition
-  nezumi: '#7A766D', // gray — metadata (chapter counts, timestamps)
+  // gray — metadata (chapter counts, timestamps). Lightened from the spec's
+  // #7A766D (4.3:1 on sumi, fails AA at body/small text sizes) to hit 4.5:1+
+  // on both sumi and backgroundElement while keeping the same warm-gray hue.
+  nezumi: '#827E74',
 };
 
 const theme = {

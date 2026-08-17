@@ -192,9 +192,34 @@ and stealth all at once instead of one at a time.
       wired to the backend; library screen is still an empty state pending
       the Supabase schema below
 - [x] Offline download manager (`expo-file-system`) — `lib/downloads.ts`
-      implements download/list/delete against the new File/Directory/Paths
-      API; not yet wired to a download button in the reader UI
+      implements download/list/delete against the File/Directory/Paths API;
+      wired to a per-chapter download button in the manga detail chapter
+      list, and the reader now prefers downloaded pages over the network
+      when a chapter is available offline. Native-only — a `Platform.OS`
+      guard hides the button and no-ops the download calls on web, since
+      expo-file-system's Directory/File aren't implemented there
+- [x] UI/UX polish pass — fixed two WCAG AA contrast failures (`nezumi`
+      textSecondary was 4.3:1 on `sumi`, `hanko` used as raw error-message
+      text was 3.3:1; see updated comments in `constants/theme.ts`), added
+      a shared `ErrorNotice` component (icon + retry) to every screen that
+      previously dead-ended on fetch failure, gave the manga detail header
+      a scrim so its transparent back button stays legible over any cover
+      art, converted the chapter list to `FlashList` for long chapter runs,
+      and built the chapter-complete freeze-frame transition (desaturate to
+      kohaku, `続` stamps in hanko, hands off to the next chapter) —
+      `components/chapter-complete-overlay.tsx`, triggered from the reader
+      on reaching the last page
 - [ ] Supabase schema: library, progress, categories
+
+**Known issue found during the polish pass**: the `(tabs)` layout's
+`NativeTabs` (`expo-router/unstable_native_tabs`) crashes on web — its icon
+renderer calls `expo-font.renderToImageAsync`, which doesn't exist outside
+native. Reproducible on a clean checkout (unrelated to any change in this
+pass), scoped to routes inside the tab navigator; `manga/[id]` and
+`reader/[chapterId]` render fine since they sit outside it. Not fixed here —
+native is the target platform (see Architecture) and web is a dev
+convenience, but worth a `Platform.OS`-gated fallback tab bar if web is ever
+meant to work.
 
 ## Decisions Log
 

@@ -5,6 +5,7 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ErrorNotice } from '@/components/error-notice';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
@@ -54,9 +55,12 @@ export default function SearchScreen() {
         {status === 'loading' && <ActivityIndicator color={Colors.dark.accent} style={styles.spinner} />}
 
         {status === 'error' && (
-          <ThemedText themeColor="accent" style={styles.message}>
-            Couldn't reach the backend. Check EXPO_PUBLIC_API_BASE_URL and try again.
-          </ThemedText>
+          <View style={styles.message}>
+            <ErrorNotice
+              message="Couldn't reach the backend. Check EXPO_PUBLIC_API_BASE_URL and try again."
+              onRetry={runSearch}
+            />
+          </View>
         )}
 
         {status === 'idle' && results.length === 0 && query.trim().length > 0 && (
@@ -109,6 +113,8 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two,
     borderRadius: Spacing.two,
     backgroundColor: Colors.dark.backgroundElement,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
     color: Colors.dark.text,
     fontFamily: Fonts.body,
     fontSize: 16,

@@ -1,13 +1,35 @@
 import { Directory, File, Paths } from 'expo-file-system';
+import { Platform } from 'react-native';
 
 /**
  * Offline chapter downloads (in scope for v1 — see CLAUDE.md Decisions Log).
  * Pages are saved under a per-chapter directory with a local JSON index for
  * fast "is this downloaded" / listing checks without touching the filesystem.
+ *
+ * expo-file-system's Directory/File aren't implemented on web, and merely
+ * constructing one there throws — so every entry point below is a no-op on
+ * web instead of touching the filesystem, and the root/index File objects
+ * are built lazily (not at module scope) so importing this file never
+ * crashes web SSR/bundling even though downloads themselves are native-only.
  */
+const isWeb = Platform.OS === 'web';
 
-const ROOT = new Directory(Paths.document, 'tsuzuku-downloads');
-const INDEX_FILE = new File(ROOT, 'index.json');
+let root: Directory | undefined;
+let indexFile: File | undefined;
+
+function getRoot(): Directory {
+  if (!root) {
+    root = new Directory(Paths.document, 'tsuzuku-downloads');
+  }
+  return root;
+}
+
+function getIndexFile(): File {
+  if (!indexFile) {
+    indexFile = new File(getRoot(), 'index.json');
+  }
+  return indexFile;
+}
 
 export interface DownloadedChapter {
   chapterId: string;
@@ -28,33 +50,33 @@ function extensionOf(url: string): string {
 }
 
 function ensureRoot(): void {
-  if (!ROOT.exists) {
-    ROOT.create({ intermediates: true });
+  const dir = getRoot();
+  if (!dir.exists) {
+    dir.create({ intermediates: true });
   }
 }
 
 function readIndex(): DownloadIndex {
   ensureRoot();
-  if (!INDEX_FILE.exists) {
+  const file = getIndexFile();
+  if (!file.exists) {
     return {};
   }
-  return JSON.parse(INDEX_FILE.textSync()) as DownloadIndex;
+  return JSON.parse(file.textSync()) as DownloadIndex;
 }
 
 function writeIndex(index: DownloadIndex): void {
   ensureRoot();
-  INDEX_FILE.write(JSON.stringify(index));
+  getIndexFile().write(JSON.stringify(index));
 }
 
 function chapterDirectory(chapterId: string): Directory {
-  return new Directory(ROOT, sanitize(chapterId));
+  return new Directory(getRoot(), sanitize(chapterId));
 }
 
-export async function downloadChapter(
-  chapterId: string,
-  mangaId: string,
-  pageUrls: string[],
-): Promise<void> {
+export async function downloadChapter(chapterId: string, mangaId: string, pageUrls: string[]): Promise<void> {
+  if (isWeb) return;
+
   const dir = chapterDirectory(chapterId);
   if (!dir.exists) {
     dir.create({ intermediates: true });
@@ -79,10 +101,13 @@ export async function downloadChapter(
 }
 
 export function isChapterDownloaded(chapterId: string): boolean {
+  if (isWeb) return false;
   return chapterId in readIndex();
 }
 
 export function getDownloadedPages(chapterId: string): string[] {
+  if (isWeb) return [];
+
   const entry = readIndex()[chapterId];
   if (!entry) {
     return [];
@@ -97,10 +122,13 @@ export function getDownloadedPages(chapterId: string): string[] {
 }
 
 export function listDownloadedChapters(): DownloadedChapter[] {
+  if (isWeb) return [];
   return Object.values(readIndex()).sort((a, b) => b.downloadedAt.localeCompare(a.downloadedAt));
 }
 
 export function deleteChapterDownload(chapterId: string): void {
+  if (isWeb) return;
+
   const dir = chapterDirectory(chapterId);
   if (dir.exists) {
     dir.delete();
