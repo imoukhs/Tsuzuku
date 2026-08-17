@@ -2,7 +2,7 @@ import asyncio
 import re
 from urllib.parse import quote_plus, urlparse
 
-from scrapling.fetchers import Fetcher
+from scrapling.fetchers import StealthyFetcher
 
 from app.models.chapter import Chapter
 from app.models.manga import MangaDetail, MangaResult, SourceInfo
@@ -22,8 +22,13 @@ def _slug_from_chapter_url(url: str) -> str:
 
 
 class AquaMangaSource(Source):
-    """Madara WordPress theme (aquareader.org). Simple, no Cloudflare — the
-    proving ground for the source contract. See CLAUDE.md Roadmap phase 1.
+    """Madara WordPress theme (aquareader.org). See CLAUDE.md Roadmap phase 1.
+
+    Was plain `Fetcher` originally (assumed no Cloudflare); live testing
+    against the real site turned up a Cloudflare Turnstile challenge on
+    every request (403, "Just a moment..." page), so this now goes through
+    `StealthyFetcher` with `solve_cloudflare=True` instead — Cloudflare
+    configs change per site-owner over time, see CLAUDE.md Roadmap phase 6.
     """
 
     id = "aquamanga"
@@ -33,9 +38,13 @@ class AquaMangaSource(Source):
     def _source_info(self) -> SourceInfo:
         return SourceInfo(id=self.id, name=self.name)
 
+    @staticmethod
+    async def _fetch(url: str):
+        return await asyncio.to_thread(StealthyFetcher.fetch, url, solve_cloudflare=True)
+
     async def search(self, query: str) -> list[MangaResult]:
         url = f"{self.base_url}/?s={quote_plus(query)}&post_type=wp-manga"
-        page = await asyncio.to_thread(Fetcher.get, url)
+        page = await self._fetch(url)
 
         results: list[MangaResult] = []
         for card in page.css(".c-tabs-item__content", adaptive=True):
@@ -64,7 +73,7 @@ class AquaMangaSource(Source):
     async def get_manga(self, manga_id: str) -> MangaDetail:
         slug = self.strip_id(manga_id)
         url = f"{self.base_url}/manga/{slug}/"
-        page = await asyncio.to_thread(Fetcher.get, url)
+        page = await self._fetch(url)
 
         title_el = page.css(".post-title h1", adaptive=True).first
         title = (title_el.text or slug).strip() if title_el else slug
@@ -107,7 +116,7 @@ class AquaMangaSource(Source):
     async def get_chapters(self, manga_id: str) -> list[Chapter]:
         slug = self.strip_id(manga_id)
         url = f"{self.base_url}/manga/{slug}/"
-        page = await asyncio.to_thread(Fetcher.get, url)
+        page = await self._fetch(url)
 
         chapters: list[Chapter] = []
         for link in page.css(".wp-manga-chapter a", adaptive=True):
@@ -133,7 +142,7 @@ class AquaMangaSource(Source):
     async def get_pages(self, chapter_id: str) -> list[str]:
         local_id = self.strip_id(chapter_id)
         url = f"{self.base_url}/manga/{local_id}/"
-        page = await asyncio.to_thread(Fetcher.get, url)
+        page = await self._fetch(url)
 
         pages: list[str] = []
         for img in page.css(".reading-content img", adaptive=True):
