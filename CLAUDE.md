@@ -92,19 +92,25 @@ tsuzuku/
 │   ├── requirements.txt
 │   └── Dockerfile
 │
-├── app/                          # Expo app
-│   ├── app/                      # expo-router screens
-│   │   ├── (tabs)/
-│   │   │   ├── library.tsx
-│   │   │   ├── search.tsx
-│   │   │   └── settings.tsx
-│   │   ├── manga/[id].tsx
-│   │   └── reader/[chapterId].tsx
-│   ├── components/
-│   ├── lib/
-│   │   ├── api.ts                # backend client
-│   │   ├── downloads.ts          # expo-file-system chapter downloads + local index
-│   │   └── supabase.ts
+├── app/                           # Expo app (SDK 57 default template:
+│   │                              # expo-router root is src/app/, not app/app/)
+│   ├── src/
+│   │   ├── app/                   # expo-router screens
+│   │   │   ├── (tabs)/
+│   │   │   │   ├── _layout.tsx    # NativeTabs
+│   │   │   │   ├── library.tsx
+│   │   │   │   ├── search.tsx
+│   │   │   │   └── settings.tsx
+│   │   │   ├── _layout.tsx        # root Stack + font loading
+│   │   │   ├── manga/[id].tsx
+│   │   │   └── reader/[chapterId].tsx
+│   │   ├── components/
+│   │   ├── constants/theme.ts     # palette + type tokens
+│   │   ├── hooks/
+│   │   └── lib/
+│   │       ├── api.ts             # backend client
+│   │       ├── downloads.ts       # expo-file-system chapter downloads + local index
+│   │       └── supabase.ts
 │   ├── app.json
 │   └── package.json
 │
@@ -112,8 +118,8 @@ tsuzuku/
 └── README.md
 ```
 
-- `sources/` on the backend and screens under `app/app/` are the two places
-  that grow as the project grows — everything else should stay stable
+- `sources/` on the backend and screens under `app/src/app/` are the two
+  places that grow as the project grows — everything else should stay stable
 - `registry.py` is the single place that maps a source `id` prefix to its
   module; the ID-splitting logic described above lives there
 
@@ -176,11 +182,18 @@ and stealth all at once instead of one at a time.
 
 ## Status
 
-- [ ] FastAPI skeleton + `Source` ABC
-- [ ] First scrape-based source module (Aqua Manga)
-- [ ] Redis cache layer
-- [ ] Expo search + reader UI
-- [ ] Offline download manager (`expo-file-system`)
+- [x] FastAPI skeleton + `Source` ABC
+- [x] First scrape-based source module (Aqua Manga) — parsing verified against
+      realistic Madara HTML fixtures; not yet verified live (this sandbox's
+      network proxy blocks aquareader.org, so test on a real dev machine
+      before trusting it end-to-end)
+- [x] Redis cache layer
+- [x] Expo search + reader UI — navigation shell, screens, and design system
+      wired to the backend; library screen is still an empty state pending
+      the Supabase schema below
+- [x] Offline download manager (`expo-file-system`) — `lib/downloads.ts`
+      implements download/list/delete against the new File/Directory/Paths
+      API; not yet wired to a download button in the reader UI
 - [ ] Supabase schema: library, progress, categories
 
 ## Decisions Log
