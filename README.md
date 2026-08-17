@@ -23,7 +23,8 @@ contract, design system, and roadmap.
 cd backend
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env  # fill in REDIS_URL, SUPABASE_URL, SUPABASE_KEY
+scrapling install       # downloads browsers for StealthyFetcher (later phases)
+cp .env.example .env    # fill in REDIS_URL, SUPABASE_URL, SUPABASE_KEY
 uvicorn app.main:app --reload
 ```
 
