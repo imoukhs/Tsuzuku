@@ -56,7 +56,13 @@ export default function MangaDetailScreen() {
 
   // Newest first for display; the reader screen re-derives ascending order
   // itself (via /manga/{id}/chapters, cached) to chain "next chapter".
-  const chaptersDesc = useMemo(() => [...chapters].sort((a, b) => b.number - a.number), [chapters]);
+  // .slice() instead of [...chapters] — spread crashed on-device with
+  // "iterator method is not callable" (Hermes/React Compiler interaction);
+  // slice() copies via length+index, sidestepping the iterator protocol.
+  const chaptersDesc = useMemo(
+    () => chapters.slice().sort((a, b) => b.number - a.number),
+    [chapters],
+  );
 
   const handleDownload = useCallback(
     async (chapter: Chapter) => {

@@ -75,7 +75,8 @@ export default function ReaderScreen() {
   }, [mangaId, chapterId]);
 
   const nextChapterId = useMemo(() => {
-    const asc = [...siblingChapters].sort((a, b) => a.number - b.number);
+    // .slice() instead of [...siblingChapters] — see manga/[id].tsx for why.
+    const asc = siblingChapters.slice().sort((a, b) => a.number - b.number);
     const index = asc.findIndex((chapter) => chapter.id === chapterId);
     return index >= 0 ? (asc[index + 1]?.id ?? null) : null;
   }, [siblingChapters, chapterId]);
